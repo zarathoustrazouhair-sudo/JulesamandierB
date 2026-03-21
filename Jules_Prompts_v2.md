@@ -311,7 +311,7 @@ WHERE table_schema = 'public'
 **Implementation Vector:**
 - `src/app/(auth)/login/page.tsx` — 3-step flow managed by `useReducer` with states `'floor' | 'apartment' | 'pin'`; floor buttons 1–5; apt buttons 1–3; 4-dot PIN input; derived email: `apt_E{floor}A{apt}@amandier-b.internal`; calls `supabase.auth.signInWithPassword`
 - `src/app/admin/login/page.tsx` — email+password form; reads `session.user.app_metadata.role` on success; redirects to `/syndic/dashboard`
-- `src/middleware.ts` — reads Supabase session from cookies via `createServerClient`; blocks unauthenticated access; enforces role→route mapping; redirects on mismatch
+- `src/middleware.ts` — reads Supabase session from cookies via `createServerClient`; blocks unauthenticated access; enforces role→route mapping; redirects on mismatch; generates a 16-byte base64 nonce using `crypto.getRandomValues()`; injects strict Content-Security-Policy (CSP) via `Content-Security-Policy` and `X-Content-Security-Policy` headers; CSP must use the nonce for `script-src` and `style-src` (e.g., `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'; style-src 'self' 'nonce-${nonce}';`); the nonce is passed to the request headers (e.g., `x-nonce`) so it can be consumed by `src/app/layout.tsx` for inline scripts and styles.
 - `src/contexts/AuthContext.tsx` — provides `user`, `role`, `apartmentId`, `signOut()`; subscribes to `supabase.auth.onAuthStateChange`; calls `supabase.auth.refreshSession()` on 401 errors
 
 **Critic Mandate:**
@@ -1364,10 +1364,6 @@ async headers() {
       { key: 'X-Frame-Options', value: 'DENY' },
       { key: 'X-Content-Type-Options', value: 'nosniff' },
       { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-      {
-        key: 'Content-Security-Policy',
-        value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline';"
-      },
       { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' }
     ]
   }];
