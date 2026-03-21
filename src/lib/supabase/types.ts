@@ -358,7 +358,7 @@ export interface Database {
           charge_totale: number | null
           total_paye: number | null
           balance: number | null
-          statut_financier: string | null
+          balance_state: string | null
         }
       }
     }
@@ -382,7 +382,7 @@ export interface Database {
           numero: number
           resident_nom: string
           balance: number
-          statut_financier: string
+          balance_state: string
         }[]
       }
       get_server_time: {
